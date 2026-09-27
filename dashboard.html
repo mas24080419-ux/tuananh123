@@ -123,11 +123,6 @@
             </div>
           </article>
         </div>
-        <article class="data-lineage panel">
-          <div><span>DATASET</span><strong id="dataset-name">Power Consumption of Tetouan City</strong><small id="dataset-meta">UCI Machine Learning Repository</small></div>
-          <div><span>TRAIN / TEST</span><strong id="split-info">—</strong><small>Chronological split</small></div>
-          <div><span>TRANSFER LIMITATION</span><strong>Không phải dữ liệu Việt Nam</strong><small>Model cần retrain với smart-meter địa phương trước deployment thực tế.</small></div>
-        </article>
       </section>
 
       <section class="section-block" id="schedule">
@@ -151,18 +146,6 @@
           <button class="secondary-button" id="advisor-refresh" type="button">Phân tích lại ✦</button>
         </div>
         <div class="advisor-grid" id="advisor-grid"><article class="advisor-card"><span class="advisor-priority">Đang phân tích</span><h3>EnergyGuard đang đọc forecast…</h3><p>Khuyến nghị sẽ xuất hiện sau khi dữ liệu được tải.</p></article></div>
-      </section>
-
-      <section class="section-block provenance-block">
-        <article class="panel provenance-panel">
-          <div><p class="eyebrow">DATA PROVENANCE</p><h2>Nguồn và giới hạn dữ liệu</h2></div>
-          <div class="provenance-grid">
-            <div><span>Weather / Irradiance</span><strong>Open-Meteo</strong><small>Dữ liệu forecast theo tọa độ; Solar là engineering estimate từ GHI.</small></div>
-            <div><span>Load model</span><strong>UCI Tetouan 2017</strong><small>Random Forest học load factor; không coi là calibration cho Hà Nội.</small></div>
-            <div><span>Battery optimization</span><strong>Self-consumption greedy</strong><small>Mô phỏng theo SOC, hiệu suất round-trip và giới hạn charge/discharge.</small></div>
-            <div><span>Fail-safe</span><strong>Baseline fallback</strong><small>Nếu ML service không khả dụng, dashboard dùng transparent baseline thay vì trả số giả.</small></div>
-          </div>
-        </article>
       </section>
 
       <footer class="dashboard-footer"><span>EnergyGuard · Smart Energy Intelligence</span><span id="footer-status">Data transparency enabled</span></footer>
