@@ -55,3 +55,37 @@ const advisorBtn=$('#advisor-btn');advisorBtn?.addEventListener('click',async()=
 const consumption=$('#consumption');const solarSize=$('#solar-size');function updateCalc(){if(!consumption||!solarSize)return;const c=Number(consumption.value);const s=Number(solarSize.value);const gen=Math.round(s*113.5);const coverage=Math.max(0,Math.min(100,Math.round(gen/c*100)));const grid=Math.max(0,c-gen);const co2=Math.round(gen*.716);$('#consumption-value').textContent=c.toLocaleString('vi-VN');$('#solar-value').textContent=s;$('#generation').textContent=gen.toLocaleString('vi-VN')+' kWh';$('#grid-use').textContent=grid.toLocaleString('vi-VN')+' kWh';$('#coverage').textContent=coverage+'%';$('#co2').textContent=co2.toLocaleString('vi-VN')+' kg';const ring=$('.ring-progress');if(ring)ring.style.strokeDashoffset=308-(308*coverage/100)}consumption?.addEventListener('input',updateCalc);solarSize?.addEventListener('input',updateCalc);updateCalc();
 $('#contact-form')?.addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const btn=$('button[type="submit"]',form);const old=btn.innerHTML;btn.innerHTML='Đang gửi…';btn.disabled=true;const fd=new FormData(form);const message=[fd.get('message')||'','SĐT: '+(fd.get('phone')||'Không cung cấp'),'Loại dự án: '+(fd.get('type')||'Khác')].join('\n');try{const result=await api('/api/contact',{method:'POST',body:JSON.stringify({name:fd.get('name'),email:fd.get('email'),message})});showToast('Đã nhận yêu cầu!',`Mã yêu cầu: ${result.id}`);form.reset()}catch(err){showToast('Gửi yêu cầu chưa thành công',err.message)}finally{btn.innerHTML=old;btn.disabled=false}});
 $$('.dash-sidebar button').forEach(btn=>btn.addEventListener('click',()=>{$$('.dash-sidebar button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}));hydrateLiveEnergy();
+
+// Homepage authentication/account control.
+(function initHomepageAccountMenu(){
+  const navMenu=document.querySelector('.nav-menu');
+  if(!navMenu||document.querySelector('.nav-account-wrap'))return;
+  const SESSION_KEY='energyguard_session_v1';
+  const USER_KEY='energyguard_user_v1';
+  const AUTH_BASE='https://energyguard-auth.onrender.com';
+  const style=document.createElement('style');
+  style.textContent=`
+    .nav-account-wrap{position:relative;display:flex;align-items:center;margin-left:2px}
+    .nav-login-link,.nav-user-btn{min-height:42px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#f3f8f4!important;display:inline-flex;align-items:center;gap:9px;text-decoration:none!important;font:700 13px/1 DM Sans,sans-serif;white-space:nowrap;transition:.2s ease;cursor:pointer}
+    .nav-login-link:hover,.nav-user-btn:hover{border-color:rgba(200,255,98,.5);background:rgba(200,255,98,.09);color:#dfffad!important}
+    .nav-user-btn{font-family:inherit}.nav-user-avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#c8ff62;color:#0b2517;font-size:11px;font-weight:900;overflow:hidden}.nav-user-avatar img{width:100%;height:100%;object-fit:cover}.nav-chevron{font-size:10px;opacity:.65;transition:transform .2s}.nav-account-wrap.open .nav-chevron{transform:rotate(180deg)}
+    .nav-account-menu{position:absolute;top:calc(100% + 12px);right:0;width:210px;padding:8px;background:#0b2017;border:1px solid rgba(255,255,255,.1);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.38);display:none;z-index:100}.nav-account-wrap.open .nav-account-menu{display:grid}.nav-account-menu a,.nav-account-menu button{width:100%;border:0;background:transparent;color:#e9f4ed!important;text-align:left;padding:11px 12px;border-radius:10px;text-decoration:none!important;font:600 13px/1.2 DM Sans,sans-serif;cursor:pointer}.nav-account-menu a:hover,.nav-account-menu button:hover{background:rgba(255,255,255,.07)}.nav-account-menu .logout{color:#ffb6b6!important;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;padding-top:12px}
+    @media(max-width:980px){.nav-account-wrap{width:100%;display:block;margin:8px 0 0}.nav-login-link,.nav-user-btn{width:100%;justify-content:center;min-height:46px}.nav-account-menu{position:static;width:100%;margin-top:8px;box-shadow:none;background:rgba(255,255,255,.035)}.nav-account-wrap.open .nav-account-menu{display:grid}}
+  `;
+  document.head.appendChild(style);
+  const wrap=document.createElement('div');wrap.className='nav-account-wrap';navMenu.appendChild(wrap);
+  let user=null;try{user=JSON.parse(localStorage.getItem(USER_KEY)||'null')}catch{}
+  const token=localStorage.getItem(SESSION_KEY)||'';
+  const renderLoggedOut=()=>{wrap.classList.remove('open');wrap.innerHTML='<a class="nav-login-link" href="login.html" aria-label="Đăng nhập EnergyGuard"><span>👤</span><span>Đăng nhập</span></a>'};
+  const renderLoggedIn=u=>{
+    const display=String(u?.name||u?.email||'Tài khoản').trim();const first=display.split(/\s+/)[0]||'Tài khoản';
+    const avatar=u?.picture?`<span class="nav-user-avatar"><img src="${String(u.picture).replace(/"/g,'&quot;')}" alt=""></span>`:`<span class="nav-user-avatar">${first.slice(0,1).toUpperCase()}</span>`;
+    wrap.innerHTML=`<button class="nav-user-btn" type="button" aria-expanded="false">${avatar}<span>${first}</span><span class="nav-chevron">▼</span></button><div class="nav-account-menu"><a href="dashboard.html">Dashboard</a><a href="account.html">Tài khoản</a><a href="history.html">Lịch sử dự báo</a><a href="analytics.html">Energy Analytics</a><button class="logout" type="button">Đăng xuất</button></div>`;
+    const btn=wrap.querySelector('.nav-user-btn');btn?.addEventListener('click',e=>{e.stopPropagation();const open=wrap.classList.toggle('open');btn.setAttribute('aria-expanded',String(open))});
+    wrap.querySelector('.logout')?.addEventListener('click',async()=>{try{await fetch(AUTH_BASE+'/logout',{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem(SESSION_KEY)||''}`}})}catch{}localStorage.removeItem(SESSION_KEY);localStorage.removeItem(USER_KEY);renderLoggedOut()});
+  };
+  document.addEventListener('click',e=>{if(!wrap.contains(e.target))wrap.classList.remove('open')});
+  if(!token){renderLoggedOut();return}
+  if(user)renderLoggedIn(user);else renderLoggedOut();
+  fetch(AUTH_BASE+'/me',{headers:{Authorization:`Bearer ${token}`}}).then(async r=>{if(!r.ok)throw new Error('invalid session');return r.json()}).then(me=>{if(me?.user){localStorage.setItem(USER_KEY,JSON.stringify(me.user));renderLoggedIn(me.user)}}).catch(()=>{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(USER_KEY);renderLoggedOut()});
+})();
