@@ -1,6 +1,6 @@
 const $=(s,c=document)=>c.querySelector(s);const $$=(s,c=document)=>[...c.querySelectorAll(s)];
 const API_BASE='https://energyguard-api.onrender.com';
-const ML_BASE='https://energyguard-ml.onrender.com';
+const ML_BASE='https://energyguard-model.onrender.com';
 const DEFAULT_SYSTEM={lat:21.0285,lon:105.8542,solarKwp:5,batteryKwh:10,dailyConsumptionKwh:20,initialSocPct:60};
 const liveState={weather:null,load:[],solar:[],optimization:null,loadModel:'transparent-baseline-v1',loadBenchmark:null};
 
