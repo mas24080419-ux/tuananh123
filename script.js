@@ -33,8 +33,8 @@ tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.
 
 let toastTimer;function showToast(title,subtitle){const toast=$('#toast');if(!toast)return;$('strong',toast).textContent=title;$('span',toast).textContent=subtitle;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),4200)}
 
-function currentHourIndex(times){if(!times?.length)return 0;const key=new Date().toISOString().slice(0,13);let idx=times.findIndex(t=>String(t).slice(0,13)>=key);return idx<0?0:idx}
-function updateDashboard(){const metrics=$$('.dash-metrics .metric');if(metrics.length<4||!liveState.weather||!liveState.optimization)return;const idx=currentHourIndex(liveState.weather.hourly.time);const solar=liveState.solar[idx]||0;const load=liveState.load[idx]||0;const step=liveState.optimization.schedule?.[idx]||liveState.optimization.schedule?.[0]||{};
+function currentHourIndex(times,currentTime){if(!times?.length)return 0;const key=String(currentTime||'').slice(0,13);let idx=key?times.findIndex(t=>String(t).slice(0,13)===key):-1;if(idx<0&&key)idx=times.findIndex(t=>String(t).slice(0,13)>key);return idx<0?0:idx}
+function updateDashboard(){const metrics=$$('.dash-metrics .metric');if(metrics.length<4||!liveState.weather||!liveState.optimization)return;const idx=0;const solar=liveState.solar[idx]||0;const load=liveState.load[idx]||0;const step=liveState.optimization.schedule?.[idx]||{};
   const solarStrong=$('strong',metrics[0]);if(solarStrong)solarStrong.innerHTML=`${fmt(solar)} <em>kW</em>`;const solarSpan=$('span',metrics[0]);if(solarSpan)solarSpan.textContent='Open-Meteo live forecast';
   const loadStrong=$('strong',metrics[1]);if(loadStrong)loadStrong.innerHTML=`${fmt(load)} <em>kW</em>`;const loadSpan=$('span',metrics[1]);if(loadSpan)loadSpan.textContent='Baseline forecast';
   const battStrong=$('strong',metrics[2]);if(battStrong)battStrong.innerHTML=`${fmt(step.socPct,1)} <em>%</em>`;const battSpan=$('span',metrics[2]);if(battSpan)battSpan.textContent=step.chargeKw>0?`Charging +${fmt(step.chargeKw)} kW`:step.dischargeKw>0?`Discharging ${fmt(step.dischargeKw)} kW`:'Holding';
@@ -44,7 +44,7 @@ function updateDashboard(){const metrics=$$('.dash-metrics .metric');if(metrics.
 
 async function hydrateLiveEnergy(){try{
   const weather=await api(`/api/weather?lat=${DEFAULT_SYSTEM.lat}&lon=${DEFAULT_SYSTEM.lon}&days=2&capacity_kwp=${DEFAULT_SYSTEM.solarKwp}`);liveState.weather=weather;
-  const start=currentHourIndex(weather.hourly.time);const rows=weather.hourly.time.slice(start,start+24).map((_,i)=>{const j=start+i;return{hour:new Date(weather.hourly.time[j]).getHours(),temperatureC:weather.hourly.temperatureC[j],humidityPct:weather.hourly.humidityPct[j],weekday:new Date(weather.hourly.time[j]).getDay()}});
+  const start=currentHourIndex(weather.hourly.time,weather.current?.time);const rows=weather.hourly.time.slice(start,start+24).map((t,i)=>{const j=start+i;return{hour:Number(String(t).slice(11,13)),temperatureC:weather.hourly.temperatureC[j],humidityPct:weather.hourly.humidityPct[j],weekday:new Date(String(t).slice(0,10)+'T12:00:00').getDay()}});
   const loadResp=await api('/api/predict/load',{method:'POST',body:JSON.stringify({baseLoadKw:DEFAULT_SYSTEM.dailyConsumptionKwh/24,hours:rows})});
   liveState.load=loadResp.forecast.map(x=>x.predictedLoadKw);liveState.solar=weather.hourly.estimatedSolarKw.slice(start,start+24);
   liveState.optimization=await api('/api/optimize/bess',{method:'POST',body:JSON.stringify({solarKw:liveState.solar,loadKw:liveState.load,batteryCapacityKwh:DEFAULT_SYSTEM.batteryKwh,initialSocPct:DEFAULT_SYSTEM.initialSocPct,minSocPct:15,maxSocPct:95,maxChargeKw:5,maxDischargeKw:5,roundTripEfficiency:.90})});
