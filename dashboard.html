@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#071c16" />
+  <meta name="description" content="EnergyGuard Operations Dashboard — dự báo phụ tải, solar, SOC pin, grid flow và benchmark mô hình." />
+  <title>EnergyGuard — Operations Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="side-nav">
+      <a class="side-brand" href="index.html" aria-label="EnergyGuard trang chủ">
+        <span class="brand-bolt">ϟ</span>
+        <span><strong>EnergyGuard</strong><small>OPERATIONS</small></span>
+      </a>
+      <nav class="side-links" aria-label="Dashboard navigation">
+        <a class="active" href="#overview"><span>⌂</span><b>Tổng quan</b></a>
+        <a href="#forecast"><span>⌁</span><b>Dự báo 24h</b></a>
+        <a href="#battery"><span>▣</span><b>Battery</b></a>
+        <a href="#model"><span>◇</span><b>Model AI</b></a>
+        <a href="#schedule"><span>▤</span><b>Lịch theo giờ</b></a>
+        <a href="#advisor"><span>✦</span><b>Advisor</b></a>
+      </nav>
+      <div class="side-foot">
+        <span class="connection-dot"></span>
+        <div><strong id="side-status">Đang kết nối</strong><small>EnergyGuard services</small></div>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">SMART ENERGY COMMAND CENTER</p>
+          <h1>Operations Dashboard</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="live-chip"><span></span><b id="live-state">LIVE</b><small id="updated-at">Chưa cập nhật</small></div>
+          <button class="icon-button" id="refresh-btn" type="button" title="Làm mới dữ liệu">↻</button>
+          <a class="home-link" href="index.html">Trang chủ ↗</a>
+        </div>
+      </header>
+
+      <section class="control-panel" aria-label="Cấu hình hệ thống">
+        <div class="control-title">
+          <span class="control-icon">⚙</span>
+          <div><strong>Cấu hình mô phỏng</strong><small>Thay đổi thông số rồi chạy lại forecast.</small></div>
+        </div>
+        <form id="system-form" class="control-grid">
+          <label>Vĩ độ<input id="lat" name="lat" type="number" step="0.0001" value="21.0285" min="-90" max="90"></label>
+          <label>Kinh độ<input id="lon" name="lon" type="number" step="0.0001" value="105.8542" min="-180" max="180"></label>
+          <label>Điện tiêu thụ/ngày<input id="daily-load" name="dailyLoad" type="number" step="1" min="1" max="100000" value="20"><span>kWh</span></label>
+          <label>Solar<input id="solar-kwp" name="solarKwp" type="number" step="0.5" min="0.1" max="5000" value="5"><span>kWp</span></label>
+          <label>Battery<input id="battery-kwh" name="batteryKwh" type="number" step="1" min="0.5" max="10000" value="10"><span>kWh</span></label>
+          <label>SOC ban đầu<input id="soc" name="soc" type="number" step="1" min="15" max="95" value="60"><span>%</span></label>
+          <button class="run-button" type="submit"><span>▶</span> Chạy dự báo</button>
+        </form>
+      </section>
+
+      <section class="section-block" id="overview">
+        <div class="section-heading">
+          <div><p class="eyebrow">LIVE SYSTEM SNAPSHOT</p><h2>Tổng quan hệ thống</h2></div>
+          <div class="source-label" id="source-label">Đang lấy dữ liệu…</div>
+        </div>
+        <div class="kpi-grid">
+          <article class="kpi-card lime"><div class="kpi-icon">☀</div><span>Solar hiện tại</span><strong id="kpi-solar">—</strong><small id="kpi-solar-sub">kW</small></article>
+          <article class="kpi-card blue"><div class="kpi-icon">⌁</div><span>Load dự báo</span><strong id="kpi-load">—</strong><small id="kpi-load-sub">kW</small></article>
+          <article class="kpi-card violet"><div class="kpi-icon">▣</div><span>Battery SOC</span><strong id="kpi-soc">—</strong><small id="kpi-battery-action">—</small></article>
+          <article class="kpi-card orange"><div class="kpi-icon">⇄</div><span>Grid flow</span><strong id="kpi-grid">—</strong><small id="kpi-grid-sub">—</small></article>
+          <article class="kpi-card"><div class="kpi-icon">◎</div><span>Solar coverage 24h</span><strong id="kpi-coverage">—</strong><small>Phần tải không cần mua từ grid</small></article>
+          <article class="kpi-card"><div class="kpi-icon">◇</div><span>Load model</span><strong class="model-name" id="kpi-model">—</strong><small id="kpi-model-sub">—</small></article>
+        </div>
+      </section>
+
+      <section class="section-block" id="forecast">
+        <div class="section-heading">
+          <div><p class="eyebrow">24-HOUR ENERGY PROFILE</p><h2>Solar và phụ tải</h2></div>
+          <div class="legend"><span class="solar-key">Solar</span><span class="load-key">Load</span></div>
+        </div>
+        <article class="panel chart-card large-chart">
+          <div class="panel-top"><div><strong>Energy forecast</strong><small id="forecast-window">24 giờ tới</small></div><span class="panel-badge">kW</span></div>
+          <canvas id="energy-canvas" height="320" aria-label="Biểu đồ Solar và Load 24 giờ"></canvas>
+          <div class="chart-foot"><span id="peak-load-note">Peak load: —</span><span id="peak-solar-note">Peak solar: —</span></div>
+        </article>
+      </section>
+
+      <section class="two-col section-block" id="battery">
+        <article class="panel">
+          <div class="panel-top"><div><p class="eyebrow">BATTERY STATE</p><strong>SOC dự báo</strong></div><span class="panel-badge">%</span></div>
+          <canvas id="soc-canvas" height="270" aria-label="Biểu đồ SOC pin"></canvas>
+          <div class="mini-stats"><div><span>Final SOC</span><strong id="final-soc">—</strong></div><div><span>Charge</span><strong id="charge-kwh">—</strong></div><div><span>Discharge</span><strong id="discharge-kwh">—</strong></div></div>
+        </article>
+        <article class="panel">
+          <div class="panel-top"><div><p class="eyebrow">GRID INTERACTION</p><strong>Import / Export</strong></div><span class="panel-badge">kW</span></div>
+          <canvas id="grid-canvas" height="270" aria-label="Biểu đồ điện lưới import export"></canvas>
+          <div class="mini-stats"><div><span>Grid import</span><strong id="grid-import-kwh">—</strong></div><div><span>Grid export</span><strong id="grid-export-kwh">—</strong></div><div><span>Solar 24h</span><strong id="solar-kwh">—</strong></div></div>
+        </article>
+      </section>
+
+      <section class="section-block" id="model">
+        <div class="section-heading">
+          <div><p class="eyebrow">MODEL TRANSPARENCY</p><h2>Benchmark mô hình</h2></div>
+          <span class="quality-chip" id="model-quality">Đang tải metrics</span>
+        </div>
+        <div class="model-layout">
+          <article class="panel model-card">
+            <div class="winner-badge">MODEL ĐANG DÙNG</div>
+            <div class="winner-name"><span class="tree-icon">♧</span><div><strong id="winner-name">Random Forest</strong><small id="winner-version">—</small></div></div>
+            <div class="winner-metrics"><div><span>MAE</span><strong id="winner-mae">—</strong></div><div><span>RMSE</span><strong id="winner-rmse">—</strong></div><div><span>R²</span><strong id="winner-r2">—</strong></div><div><span>MAPE</span><strong id="winner-mape">—</strong></div></div>
+            <p class="model-note">Metrics được tính trên tập test giữ lại theo thứ tự thời gian. Target là load factor chuẩn hóa, không phải kW tuyệt đối tại Việt Nam.</p>
+          </article>
+          <article class="panel comparison-card">
+            <div class="panel-top"><div><strong>Model comparison</strong><small>Lower MAE/RMSE/MAPE tốt hơn; R² cao hơn tốt hơn.</small></div></div>
+            <div class="table-wrap">
+              <table class="model-table">
+                <thead><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>R²</th><th>MAPE</th></tr></thead>
+                <tbody id="model-table-body"><tr><td colspan="5">Đang tải benchmark…</td></tr></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+        <article class="data-lineage panel">
+          <div><span>DATASET</span><strong id="dataset-name">Power Consumption of Tetouan City</strong><small id="dataset-meta">UCI Machine Learning Repository</small></div>
+          <div><span>TRAIN / TEST</span><strong id="split-info">—</strong><small>Chronological split</small></div>
+          <div><span>TRANSFER LIMITATION</span><strong>Không phải dữ liệu Việt Nam</strong><small>Model cần retrain với smart-meter địa phương trước deployment thực tế.</small></div>
+        </article>
+      </section>
+
+      <section class="section-block" id="schedule">
+        <div class="section-heading">
+          <div><p class="eyebrow">HOURLY OPERATING PLAN</p><h2>Lịch vận hành 24 giờ</h2></div>
+          <div class="table-filter"><button class="active" data-filter="all">Tất cả</button><button data-filter="charge">Charge</button><button data-filter="discharge">Discharge</button><button data-filter="grid">Grid</button></div>
+        </div>
+        <article class="panel table-panel">
+          <div class="table-wrap schedule-wrap">
+            <table class="schedule-table">
+              <thead><tr><th>Thời gian</th><th>Temp.</th><th>Solar</th><th>Load</th><th>Battery</th><th>SOC</th><th>Grid</th><th>Khuyến nghị</th></tr></thead>
+              <tbody id="schedule-body"><tr><td colspan="8">Đang tải lịch vận hành…</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="section-block" id="advisor">
+        <div class="section-heading">
+          <div><p class="eyebrow">AI ENERGY ADVISOR</p><h2>Khuyến nghị hành động</h2></div>
+          <button class="secondary-button" id="advisor-refresh" type="button">Phân tích lại ✦</button>
+        </div>
+        <div class="advisor-grid" id="advisor-grid"><article class="advisor-card"><span class="advisor-priority">Đang phân tích</span><h3>EnergyGuard đang đọc forecast…</h3><p>Khuyến nghị sẽ xuất hiện sau khi dữ liệu được tải.</p></article></div>
+      </section>
+
+      <section class="section-block provenance-block">
+        <article class="panel provenance-panel">
+          <div><p class="eyebrow">DATA PROVENANCE</p><h2>Nguồn và giới hạn dữ liệu</h2></div>
+          <div class="provenance-grid">
+            <div><span>Weather / Irradiance</span><strong>Open-Meteo</strong><small>Dữ liệu forecast theo tọa độ; Solar là engineering estimate từ GHI.</small></div>
+            <div><span>Load model</span><strong>UCI Tetouan 2017</strong><small>Random Forest học load factor; không coi là calibration cho Hà Nội.</small></div>
+            <div><span>Battery optimization</span><strong>Self-consumption greedy</strong><small>Mô phỏng theo SOC, hiệu suất round-trip và giới hạn charge/discharge.</small></div>
+            <div><span>Fail-safe</span><strong>Baseline fallback</strong><small>Nếu ML service không khả dụng, dashboard dùng transparent baseline thay vì trả số giả.</small></div>
+          </div>
+        </article>
+      </section>
+
+      <footer class="dashboard-footer"><span>EnergyGuard · Smart Energy Intelligence</span><span id="footer-status">Data transparency enabled</span></footer>
+    </main>
+  </div>
+
+  <div class="loading-overlay" id="loading-overlay"><div class="loader-ring"></div><strong id="loading-title">Đang tải EnergyGuard</strong><span id="loading-subtitle">Weather → ML → Battery optimizer</span></div>
+  <div class="toast" id="toast"><strong></strong><span></span></div>
+  <script src="dashboard.js"></script>
+</body>
+</html>
